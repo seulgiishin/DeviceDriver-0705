@@ -12,7 +12,7 @@ int DeviceDriver::read(long address)
         result = (int)(m_hardware->read(address));
         
         if (prevresult != result) {
-            throw std::runtime_error("READ ERROR");
+            throw std::exception();
         }
         prevresult = result;
     }
@@ -22,8 +22,8 @@ int DeviceDriver::read(long address)
 void DeviceDriver::write(long address, int data)
 {
     // TODO: implement this method
-    if (read(address) != 0xFF) {
-        throw std::runtime_error("WRITE ERROR");
+    if ((int)(m_hardware->read(address)) != 0xFF) {
+        throw std::exception();
     }
     m_hardware->write(address, (unsigned char)data);
 }

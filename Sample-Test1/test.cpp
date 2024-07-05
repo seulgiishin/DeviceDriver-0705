@@ -36,53 +36,64 @@ TEST_F(DriverFixture, DeviceDriverReadTest) {
 	driver->read(1);
 }
 
-TEST_F(DriverFixture, DeviceDriverWriteTest) {
-	checkRead(5);
-	try {
-		//act
-		driver->write(1, 1);
-		FAIL();
-	}
-	catch (std::runtime_error& e) {
-		//assert
-		EXPECT_EQ(string(e.what()), string("WRITE ERROR"));
-	}
+TEST_F(DriverFixture, DeviceDriverReadTest2) {
+	EXPECT_CALL(memory, read(0x55))
+		.WillOnce(Return(0xA))
+		.WillOnce(Return(0xA))
+		.WillOnce(Return(0xA))
+		.WillOnce(Return(0xA))
+		.WillOnce(Return(0xB));
+
+	EXPECT_THROW({driver->read(0x55);
+		}, std::exception);
 }
 
-TEST_F(DriverFixture, DeviceDriverWriteTest2) {
-	checkRead(10);
+TEST_F(DriverFixture, DeviceDriverWriteTest) {
+	NiceMock<MockFlshMemoryDevice> mk;
+	DeviceDriver dr(&mk);
 
-	for (int i = 0; i < 2; i++) {
-		try {
-			//act
-			driver->write(1, 1);
-			FAIL();
-		}
-		catch (std::runtime_error& e) {
-			//assert
-			EXPECT_EQ(string(e.what()), string("WRITE ERROR"));
-		}
-	}
+	EXPECT_CALL(mk, read(0xDD))
+		.Times(1)
+		.WillRepeatedly(Return(0xFF));
+
+	dr.write(0xDD, 0x72);
+}
+
+TEST_F(DriverFixture, WriteExceptionTest) {
+
+	EXPECT_CALL(memory, read(0xDD))
+		.WillRepeatedly(Return(0xFA));
+
+	EXPECT_THROW({ driver->write(0xDD, 0xAA);
+		},std::exception);
 }
 
 TEST_F(DriverFixture, DeviceDriverReadAndPrintTest) {
 
-	checkRead(25);
+	EXPECT_CALL(memory, read(_))
+		.WillRepeatedly(Return(0xfd));
 
 	app->readAndPrint(0, 4);
 }
 
 TEST_F(DriverFixture, DeviceDriverWriteAllTest) {
-	checkRead(5);
+	NiceMock<MockFlshMemoryDevice> mk;
+	DeviceDriver dr(&mk);
+	Application appi(&dr);
 
-	try {
-		//act
-		app->writeAll(1111);
-		FAIL();
-	}
-	catch (std::runtime_error& e) {
-		//assert
-		EXPECT_EQ(string(e.what()), string("WRITE ERROR"));
-	}
+	EXPECT_CALL(mk, read(_))
+		.Times(5)
+		.WillRepeatedly(Return(0xFF));
+
+	appi.writeAll(0xaf);
+}
+
+TEST_F(DriverFixture, DeviceDriverWriteAllTestException) {
+
+	EXPECT_CALL(memory, read(_))
+		.WillRepeatedly(Return(0xFA));
+
+	EXPECT_THROW({ app->writeAll(0xdf);
+		}, std::exception);
 }
 
